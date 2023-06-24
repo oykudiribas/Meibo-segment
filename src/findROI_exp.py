@@ -10,9 +10,9 @@ for img_no in img_list:
     img_bgr = cv2.imread(filelist[img_no])
     img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-    ## M1.1
+    # M1.1
     thr, res_thr_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,10))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
     res_mor = cv2.morphologyEx(res_thr_img, cv2.MORPH_OPEN, kernel=kernel)
     res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
     cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -20,9 +20,9 @@ for img_no in img_list:
     mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
-        max_hull = cv2.convexHull(max_cnt)    
+        max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
@@ -30,9 +30,9 @@ for img_no in img_list:
         res_cnt1 = res_cnt.copy()
         # img2write.append(res_cnt)
 
-    ## M1.2
+    # M1.2
     thr, res_thr_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,10))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
     res_mor = cv2.morphologyEx(res_thr_img, cv2.MORPH_OPEN, kernel=kernel)
     res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
     cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -40,21 +40,21 @@ for img_no in img_list:
     mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
         max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30,30))
-        mask_cnt2 = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel, borderValue=0)    
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 30))
+        mask_cnt2 = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel, borderValue=0)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
         cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
         # img2write.append(mask_cnt2*img)
 
-    ## M2
+    # M2
     thr, res_thr_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
-    res_athr_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize = 51, C = 0)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,10))
+    res_athr_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize=51, C=0)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
     res_mor = cv2.morphologyEx(res_thr_img, cv2.MORPH_OPEN, kernel=kernel)
     res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
     cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -62,20 +62,20 @@ for img_no in img_list:
     mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
-        max_hull = cv2.convexHull(max_cnt)    
+        max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
         cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30,30))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 30))
     mask2 = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel)
     dummy = mask2*res_athr_img*255
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     dummy2 = cv2.morphologyEx(dummy, cv2.MORPH_OPEN, kernel=kernel)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     dummy3 = cv2.morphologyEx(dummy2, cv2.MORPH_CLOSE, kernel=kernel)
 
     cnts, _ = cv2.findContours(dummy3, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -83,38 +83,19 @@ for img_no in img_list:
     mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
-        max_hull = cv2.convexHull(max_cnt)    
-        cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
-        cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
-        cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
-        cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
-        # img2write.append(res_cnt)
-    
-    ## M3
-    thr, _ = cv2.threshold(img, 125, 255, cv2.THRESH_OTSU)
-    thr, res_thr_img = cv2.threshold(img, thr*1.15, 255, cv2.THRESH_BINARY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,10))
-    res_mor = cv2.morphologyEx(res_thr_img, cv2.MORPH_OPEN, kernel=kernel)
-    res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
-    cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    mask_cnt = np.zeros(img.shape, dtype=np.uint8)
-    mask_hull = np.zeros(img.shape, dtype=np.uint8)
-    res_cnt = img_bgr.copy()
-    if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
-        max_cnt = sorted_cnts[0]
-        max_hull = cv2.convexHull(max_cnt)    
+        max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
         cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
         # img2write.append(res_cnt)
 
-    ## M4
-    thr, res_thr_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,10))
+    # M3
+    thr, _ = cv2.threshold(img, 125, 255, cv2.THRESH_OTSU)
+    thr, res_thr_img = cv2.threshold(img, thr*1.15, 255, cv2.THRESH_BINARY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
     res_mor = cv2.morphologyEx(res_thr_img, cv2.MORPH_OPEN, kernel=kernel)
     res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
     cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -122,45 +103,83 @@ for img_no in img_list:
     mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
         max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (100,50))
-        mask_cnt2 = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel, borderValue=0)  
-        mask_cnt3 = cv2.morphologyEx(mask_cnt, cv2.MORPH_DILATE, kernel=kernel, borderValue=0)    
+        cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
+        cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
+        # img2write.append(res_cnt)
+
+    # M4 (Selected)
+    thr, res_thr_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
+    res_mor = cv2.morphologyEx(res_thr_img, cv2.MORPH_OPEN, kernel=kernel)
+    res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
+    cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    mask_cnt = np.zeros(img.shape, dtype=np.uint8)
+    mask_hull = np.zeros(img.shape, dtype=np.uint8)
+    res_cnt = img_bgr.copy()
+    if len(cnts) != 0:
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
+        max_cnt = sorted_cnts[0]
+        max_hull = cv2.convexHull(max_cnt)
+        cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
+        cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (100, 50))
+        mask_cnt2 = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel, borderValue=0)
+        mask_cnt3 = cv2.morphologyEx(mask_cnt, cv2.MORPH_DILATE, kernel=kernel, borderValue=0)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
         cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
 
     res_sbl = cv2.Sobel(img, dx=0, dy=1, ddepth=-1, ksize=3)
     _, res_sbl2 = cv2.threshold(res_sbl*mask_cnt3, 0, 255, cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,3))
-    res_sbl_mor = cv2.morphologyEx(res_sbl2, cv2.MORPH_OPEN, kernel=kernel)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    res_sbl_mor = cv2.morphologyEx(res_sbl2, cv2.MORPH_CLOSE, kernel=kernel)
+    res_sbl_mor = cv2.morphologyEx(res_sbl_mor, cv2.MORPH_OPEN, kernel=kernel)
 
     h, w = res_sbl.shape
-    left = res_sbl_mor[0:int(h), :]
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10,7))
-    kernel = rotate(kernel, 135)
-    res_sbl_mor2 = cv2.morphologyEx(res_sbl_mor, cv2.MORPH_CLOSE, kernel=kernel)
-    cnts, _ = cv2.findContours(res_sbl_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 5))
+    left = res_sbl_mor[:, 0:int(w/3)]
+    kernel2 = rotate(kernel, 150)
+    left = cv2.morphologyEx(left, cv2.MORPH_CLOSE, kernel=kernel2)
+    middle = res_sbl_mor[:, int(w/3):int(2*w/3)]
+    middle = cv2.morphologyEx(middle, cv2.MORPH_CLOSE, kernel=kernel)
+    right = res_sbl_mor[:, int(2*w/3):]
+    kernel2 = rotate(kernel, 30)
+    right = cv2.morphologyEx(right, cv2.MORPH_CLOSE, kernel=kernel2)
+    res_sbl_mor2 = cv2.hconcat([left, middle, right])
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
+    left = res_sbl_mor2[:, 0:int(w/3)]
+    kernel2 = rotate(kernel, 150)
+    left = cv2.morphologyEx(left, cv2.MORPH_OPEN, kernel=kernel2)
+    middle = res_sbl_mor2[:, int(w/3):int(2*w/3)]
+    middle = cv2.morphologyEx(middle, cv2.MORPH_OPEN, kernel=kernel)
+    right = res_sbl_mor2[:, int(2*w/3):]
+    kernel2 = rotate(kernel, 30)
+    right = cv2.morphologyEx(right, cv2.MORPH_OPEN, kernel=kernel2)
+    res_sbl_mor3 = cv2.hconcat([left, middle, right])
+
+    cnts, _ = cv2.findContours(res_sbl_mor3, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     mask_cnt = np.zeros(img.shape, dtype=np.uint8)
     mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
-        sorted_cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
+        sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
-        max_hull = cv2.convexHull(max_cnt)    
+        max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
         cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
 
-        img2write.append(res_sbl)
-        img2write.append(res_sbl2)
-        img2write.append(res_sbl_mor)
-        img2write.append(res_sbl_mor2)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (75, 75))
+        mask_cnt = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel, borderValue=0)
+
         img2write.append(res_cnt)
+        img2write.append(mask_cnt*img)
         img2write.append(res_cnt1)
 
     for n, i in enumerate(img2write):
