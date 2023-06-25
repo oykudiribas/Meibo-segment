@@ -3,8 +3,8 @@ import glob
 import numpy as np
 from scipy.ndimage import rotate
 
-
 img_list = [94, 183, 264, 212, 237]
+# img_list = range(100)
 filelist = sorted(glob.glob('./img/raw/*.jpeg'))
 img2write = []
 for img_no in img_list:
@@ -76,12 +76,14 @@ for img_no in img_list:
 
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (100, 50))
         mask_cnt = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 10))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 20))
         mask_cnt = cv2.morphologyEx(mask_cnt, cv2.MORPH_DILATE, kernel=kernel)
 
         img2write.append(img)
         img2write.append(cv2.addWeighted(img, 1, mask_cnt, 0.25, 1))
 
+        res_edge = cv2.Canny(img, 0, 100, apertureSize=3)
+        img2write.append(cv2.addWeighted(img, 1, res_edge, 0.25, 1))
 
     for n, i in enumerate(img2write):
         cv2.imwrite('./img/out/res_raw'+str(img_no)+'_img'+str(n)+'.png', i)
