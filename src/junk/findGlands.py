@@ -30,20 +30,20 @@ for img_no in img_list:
     res_mor2 = cv2.morphologyEx(res_mor, cv2.MORPH_CLOSE, kernel=kernel)
     cnts, _ = cv2.findContours(res_mor2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     mask_cnt = np.zeros(img.shape, dtype=np.uint8)
+    mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
         sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
         max_hull = cv2.convexHull(max_cnt)
-        cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
-        cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
-
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
+        cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (100, 50))
         mask_cnt2 = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel, borderValue=0)
         mask_cnt3 = cv2.morphologyEx(mask_cnt, cv2.MORPH_DILATE, kernel=kernel, borderValue=0)
+        cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
+        cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
 
-    # Improve ROI Mask
     res_sbl = cv2.Sobel(img, dx=0, dy=1, ddepth=-1, ksize=3)
     _, res_sbl2 = cv2.threshold(res_sbl*mask_cnt3, 0, 255, cv2.THRESH_OTSU)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -75,12 +75,14 @@ for img_no in img_list:
 
     cnts, _ = cv2.findContours(res_sbl_mor3, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     mask_cnt = np.zeros(img.shape, dtype=np.uint8)
+    mask_hull = np.zeros(img.shape, dtype=np.uint8)
     res_cnt = img_bgr.copy()
     if len(cnts) != 0:
         sorted_cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
         max_cnt = sorted_cnts[0]
         max_hull = cv2.convexHull(max_cnt)
         cv2.drawContours(mask_cnt, [max_cnt], -1, 255, thickness=cv2.FILLED)
+        cv2.drawContours(mask_hull, [max_hull], -1, 255, thickness=cv2.FILLED)
         cv2.drawContours(res_cnt, [max_cnt], -1, [255, 0, 0], thickness=1)
         cv2.drawContours(res_cnt, [max_hull], -1, [0, 255, 0], thickness=1)
 
@@ -88,81 +90,80 @@ for img_no in img_list:
         mask_cnt = cv2.morphologyEx(mask_cnt, cv2.MORPH_CLOSE, kernel=kernel)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 20))
         mask_cnt = cv2.morphologyEx(mask_cnt, cv2.MORPH_DILATE, kernel=kernel)
-        mask_cnt_fin = imfill(mask_cnt)
-        img2write.append(mask_blend(img, mask_cnt_fin))
+        mask_cnt = imfill(mask_cnt)
 
     # Bounding box and crop
     img_bbox = img_bgr.copy()
-    bbox = cv2.boundingRect(mask_cnt_fin)
-    mom = cv2.moments(mask_cnt_fin, binaryImage=True)
+    bbox = cv2.boundingRect(mask_cnt)
+    mom = cv2.moments(mask_cnt, binaryImage=True)
     cx = int(mom["m10"]/mom["m00"])
     cy = int(mom["m01"]/mom["m00"])
-    bbox_small = [cx-int(bbox[2]/4), cy-2*int(bbox[3]/8), 2*int(bbox[2]/4), 6*int(bbox[3]/8)]
+    bbox_small = [cx-int(bbox[2]/4), cy-int(bbox[3]/8), 2*int(bbox[2]/4), 5*int(bbox[3]/8)]
     cv2.rectangle(img_bbox, bbox_small, color=[255, 0, 0])
     cv2.rectangle(img_bbox, bbox, color=[0, 0, 255])
     mask_box = np.zeros(img.shape, dtype=np.uint8)
     cv2.rectangle(mask_box, bbox_small, color=255, thickness=cv2.FILLED)
     img2write.append(img_bbox)
 
-    # Find Candidate Glands
-    # clahe = cv2.createCLAHE(clipLimit=10.0, tileGridSize=(8,8))        
-    # res_histeq = clahe.apply(mask_img(img, mask_cnt_fin))
-    res_histeq = cv2.equalizeHist(mask_img(img, mask_cnt_fin))
-    thr, res_thr_histeq = cv2.threshold(res_histeq, 225, 255, cv2.THRESH_BINARY)
+    # Hist Eq
+    res_heq = cv2.equalizeHist(mask_img(img, mask_cnt))
+    clahe = cv2.createCLAHE(clipLimit=10.0, tileGridSize=(8,8))        
+    res_clahe = clahe.apply(mask_img(img, mask_cnt))
+
+    histeq = cv2.hconcat([img, res_heq, res_clahe])
+
+    # Thresholding
+    thr_in = 225
+    thr, res_thr_img = cv2.threshold(img, thr_in, 255, cv2.THRESH_BINARY)
+    thr, res_thr_heq = cv2.threshold(res_heq, thr_in, 255, cv2.THRESH_BINARY)
+    thr, res_thr_clahe = cv2.threshold(res_clahe, thr_in, 255, cv2.THRESH_BINARY)
+
+    thresholded = cv2.hconcat([res_thr_img, res_thr_heq, res_thr_clahe])
+
+    # Adaptive Threshold
     bsize = 51
-    res_athr_histeq = cv2.adaptiveThreshold(res_histeq, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize=bsize, C=-16)
-    res_athr_histeq  = res_thr_histeq +  res_athr_histeq
+    cval = -16
+    res_athr_img = cv2.adaptiveThreshold(mask_img(img, mask_cnt), 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize = bsize, C = cval)
+    res_athr_heq = cv2.adaptiveThreshold(res_heq, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize = bsize, C = cval)
+    res_athr_clahe = cv2.adaptiveThreshold(res_clahe, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize = bsize, C = cval)
+
+    res_athr_img    = res_thr_img   + res_athr_img
+    res_athr_heq    = res_thr_heq   + res_athr_heq
+    res_athr_clahe  = res_thr_clahe +  res_athr_clahe
+
+    athresholded = cv2.hconcat([res_athr_img, res_athr_heq, res_athr_clahe])
     
     # Eliminate borders
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (bsize, bsize))
-    mask_cnt_small = cv2.morphologyEx(mask_cnt_fin, cv2.MORPH_ERODE, kernel=kernel)
-    res_athr_histeq_mor  = mask_img(res_athr_histeq ,mask_cnt_small&mask_box)
+    mask_cnt_small = cv2.morphologyEx(mask_cnt, cv2.MORPH_ERODE, kernel=kernel)
+    res_athr_img    = mask_img(res_athr_img   ,mask_cnt_small&mask_box)
+    res_athr_heq    = mask_img(res_athr_heq   ,mask_cnt_small&mask_box)
+    res_athr_clahe  = mask_img(res_athr_clahe ,mask_cnt_small&mask_box)
 
     # Clean artifacts
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 7))
-    res_athr_histeq_mor  = cv2.morphologyEx(res_athr_histeq_mor, cv2.MORPH_OPEN, kernel=kernel)
+    res_athr_img    = cv2.morphologyEx(res_athr_img, cv2.MORPH_OPEN, kernel=kernel)
+    res_athr_heq    = cv2.morphologyEx(res_athr_heq, cv2.MORPH_OPEN, kernel=kernel)
+    res_athr_clahe  = cv2.morphologyEx(res_athr_clahe, cv2.MORPH_OPEN, kernel=kernel)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 10))
-    res_athr_histeq_mor  = cv2.morphologyEx(res_athr_histeq_mor, cv2.MORPH_CLOSE, kernel=kernel)
+    res_athr_img    = cv2.morphologyEx(res_athr_img, cv2.MORPH_CLOSE, kernel=kernel)
+    res_athr_heq    = cv2.morphologyEx(res_athr_heq, cv2.MORPH_CLOSE, kernel=kernel)
+    res_athr_clahe  = cv2.morphologyEx(res_athr_clahe, cv2.MORPH_CLOSE, kernel=kernel)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    res_athr_histeq_mor  = cv2.morphologyEx(res_athr_histeq_mor, cv2.MORPH_OPEN, kernel=kernel)
+    res_athr_img    = cv2.morphologyEx(res_athr_img, cv2.MORPH_OPEN, kernel=kernel)
+    res_athr_heq    = cv2.morphologyEx(res_athr_heq, cv2.MORPH_OPEN, kernel=kernel)
+    res_athr_clahe  = cv2.morphologyEx(res_athr_clahe, cv2.MORPH_OPEN, kernel=kernel)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 20))
-    res_athr_histeq_mor  = cv2.morphologyEx(res_athr_histeq_mor, cv2.MORPH_CLOSE, kernel=kernel)
-    res_candidate_glands = res_athr_histeq_mor
+    res_athr_img    = cv2.morphologyEx(res_athr_img, cv2.MORPH_CLOSE, kernel=kernel)
+    res_athr_heq    = cv2.morphologyEx(res_athr_heq, cv2.MORPH_CLOSE, kernel=kernel)
+    res_athr_clahe  = cv2.morphologyEx(res_athr_clahe, cv2.MORPH_CLOSE, kernel=kernel)
 
-    img2write.append(res_histeq)
-    img2write.append(res_athr_histeq)
-    img2write.append(res_candidate_glands)                                      
-
-    # Blob Analysis
-    cnts, _ = cv2.findContours(res_candidate_glands, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    res_cnt = img_bgr.copy()
-    res_glands = np.zeros(img.shape, dtype=np.uint8)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    for cnt in cnts:
-        area = cv2.contourArea(cnt)
-        _, (w, h), angle = cv2.minAreaRect(cnt)
-        if w < h:
-            angle = 90-angle
-        else:
-            angle = -angle
-
-        if (area>200 and (angle>45 or angle<-45)):
-            canvas = np.zeros(img.shape, dtype=np.uint8)
-            cv2.drawContours(canvas, [cnt], -1, [255, 0, 0], thickness=cv2.FILLED)
-            canvas = cv2.morphologyEx(canvas, cv2.MORPH_DILATE, kernel=kernel)
-            res_glands = res_glands | canvas
-    
-    # Final Image
-    img_res = img_bgr.copy()
-    img_res[:,:,1] = mask_blend(img_res[:,:,1], res_glands)
-    cv2.rectangle(img_res, bbox_small, color=[255, 0, 0])  
-    img2write.append(img_res)
-    
-    # Grade Calculation
-    total_roi = cv2.countNonZero(mask_box*mask_cnt_fin)
-    total_gland = cv2.countNonZero(res_glands)
-    print("Total gland intensity(%) in img ", str(img_no),": ", str(total_gland/total_roi*100))
-    
+    img2write.append(cv2.vconcat([histeq, thresholded, athresholded,
+                                 cv2.hconcat([res_athr_img, res_athr_heq, res_athr_clahe])
+                                 ]))                                      
 
     for n, i in enumerate(img2write):
         cv2.imwrite('./img/out/res_raw'+str(img_no)+'_img'+str(n)+'.png', i)
