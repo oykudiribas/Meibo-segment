@@ -28,6 +28,27 @@ def calcParams(input):
     return (l, t_std, t_mean)
 
 
+def skeleton(input):
+    size = np.size(input)
+    strel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+    skel = np.zeros(input.shape, np.uint8)
+
+    done = False
+    while (not done):
+        eroded = cv2.erode(input, strel)
+        temp = cv2.dilate(eroded, strel)
+        temp = cv2.subtract(input, temp)
+        skel = cv2.bitwise_or(skel, temp)
+        input = eroded.copy()
+
+        zeros = size - cv2.countNonZero(input)
+        if zeros == size:
+            done = True
+
+    l_skel = np.count_nonzero(skel)
+    return skel, l_skel
+
+
 img_list = [94, 183, 264, 212, 237, 95, 240]
 # img_list = range(100)
 filelist = sorted(glob.glob('./img/raw/*.jpeg'))
@@ -150,6 +171,7 @@ for img_no in img_list:
     cnts, _ = cv2.findContours(res_candidate_glands, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     res_cnt = img_bgr.copy()
     res_glands = np.zeros(img.shape, dtype=np.uint8)
+    res_gland_skel = np.zeros(img.shape, dtype=np.uint8)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
 
     res_dict = dict(l=[], t_mean=[], t_std=[], tort=[])
@@ -165,15 +187,19 @@ for img_no in img_list:
             canvas = np.zeros(img.shape, dtype=np.uint8)
             cv2.drawContours(canvas, [cnt], -1, [255, 0, 0], thickness=cv2.FILLED)
             canvas = cv2.morphologyEx(canvas, cv2.MORPH_DILATE, kernel=kernel)
+            res_skel, l_skel = skeleton(canvas)
             l, t_std, t_mean = calcParams(canvas)
             res_dict['l'].append(l)
             res_dict['t_std'].append(t_std)
             res_dict['t_mean'].append(t_mean)
+            res_dict['tort'].append(l_skel/l)
             res_glands = res_glands | canvas
+            res_gland_skel = res_gland_skel | res_skel
 
     # Final Image
     img_res = img_bgr.copy()
     img_res[:, :, 1] = mask_blend(img_res[:, :, 1], res_glands)
+    img_res[:, :, 2] = img_res[:, :, 2] | res_gland_skel
     cv2.rectangle(img_res, bbox_small, color=[255, 0, 0])
     img2write.append(img_res)
 
@@ -189,7 +215,7 @@ for img_no in img_list:
     print("- Standard dev of length(px)     : ", str(np.std(res_dict['l'])))
     print("- Average gland thickness(px)    : ", str(sum(res_dict['t_mean'])/num_gln))
     print("- Avg of stdev of thickness(px)  : ", str(sum(res_dict['t_std'])/num_gln))
-    print("- Gland tortuosities             : ")
+    print("- Avg of tortuosities(ratio)     : ", str(sum(res_dict['tort'])/num_gln))
     print("-----------------------\n")
 
     for n, i in enumerate(img2write):
